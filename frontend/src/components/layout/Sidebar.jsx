@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Dumbbell, Wind, Ruler, TrendingUp, X } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Wind, Ruler, TrendingUp, ListChecks, X } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Inicio', end: true },
   { to: '/entrenamientos', icon: Dumbbell, label: 'Entrenamientos' },
   { to: '/cardio', icon: Wind, label: 'Cardio' },
   { to: '/medidas', icon: Ruler, label: 'Medidas' },
+  { to: '/ejercicios', icon: ListChecks, label: 'Ejercicios' },
   { to: '/progreso', icon: TrendingUp, label: 'Progreso' },
 ];
 

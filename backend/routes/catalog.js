@@ -27,4 +27,10 @@ router.post('/exercises', (req, res) => {
   }
 });
 
+router.delete('/exercises/:id', (req, res) => {
+  const result = db.prepare('DELETE FROM exercise_catalog WHERE id = ?').run(req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'Ejercicio no encontrado' });
+  res.status(204).end();
+});
+
 module.exports = router;

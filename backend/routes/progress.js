@@ -61,6 +61,40 @@ router.get('/cardio', (req, res) => {
   ).all(...params));
 });
 
+router.get('/exercise/:name/history', (req, res) => {
+  const { from, to } = req.query;
+  const conditions = ['LOWER(we.exercise_name) = LOWER(?)'];
+  const params = [req.params.name];
+  if (from) { conditions.push('w.date >= ?'); params.push(from); }
+  if (to)   { conditions.push('w.date <= ?'); params.push(to); }
+
+  const sessions = db.prepare(`
+    SELECT w.id as workout_id, w.date, w.name as workout_name, we.id as we_id
+    FROM workouts w
+    JOIN workout_exercises we ON we.workout_id = w.id
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY w.date DESC, w.created_at DESC
+  `).all(...params);
+
+  const setStmt = db.prepare(
+    'SELECT set_number, reps, weight_kg FROM sets WHERE workout_exercise_id = ? ORDER BY set_number'
+  );
+
+  res.json(sessions.map(s => {
+    const sets = setStmt.all(s.we_id);
+    const weights = sets.map(x => x.weight_kg).filter(Boolean);
+    return {
+      workout_id: s.workout_id,
+      date: s.date,
+      workout_name: s.workout_name,
+      sets,
+      max_weight: weights.length ? Math.max(...weights) : null,
+      volume: sets.reduce((sum, x) => sum + (x.reps || 0) * (x.weight_kg || 0), 0),
+      total_sets: sets.length,
+    };
+  }));
+});
+
 router.get('/summary', (req, res) => {
   const now = new Date();
   const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
