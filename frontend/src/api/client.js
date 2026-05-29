@@ -1,4 +1,6 @@
-const BASE_URL = '/api';
+// En producción (Vercel) apunta a /_/backend/api vía VITE_API_URL.
+// En desarrollo usa /api (proxy de Vite → localhost:3001).
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 async function request(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
