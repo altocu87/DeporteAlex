@@ -8,6 +8,7 @@ import Cardio from './pages/Cardio.jsx';
 import Measurements from './pages/Measurements.jsx';
 import Exercises from './pages/Exercises.jsx';
 import Progress from './pages/Progress.jsx';
+import Composicion from './pages/Composicion.jsx';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="entrenamientos/:id" element={<WorkoutDetail />} />
           <Route path="cardio" element={<Cardio />} />
           <Route path="medidas" element={<Measurements />} />
+          <Route path="composicion" element={<Composicion />} />
           <Route path="ejercicios" element={<Exercises />} />
           <Route path="progreso" element={<Progress />} />
         </Route>

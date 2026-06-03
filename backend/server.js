@@ -13,6 +13,7 @@ app.use('/api/catalog', require('./routes/catalog'));
 app.use('/api/workouts', require('./routes/workouts'));
 app.use('/api/cardio', require('./routes/cardio'));
 app.use('/api/measurements', require('./routes/measurements'));
+app.use('/api/composition', require('./routes/composition'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 

@@ -64,8 +64,46 @@ CREATE TABLE IF NOT EXISTS body_measurements (
     created_at   TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS body_composition (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    date                 TEXT NOT NULL,
+    -- Peso y masa básica
+    weight_kg            REAL,
+    bmi                  REAL,
+    fat_free_weight      REAL,
+    -- Composición de grasa
+    body_fat_pct         REAL,
+    subcutaneous_fat     REAL,
+    visceral_fat         INTEGER,
+    -- Grasa segmentaria (%)
+    seg_fat_left_arm     REAL,
+    seg_fat_right_arm    REAL,
+    seg_fat_left_leg     REAL,
+    seg_fat_right_leg    REAL,
+    seg_fat_trunk        REAL,
+    -- Músculo y hueso
+    muscle_mass          REAL,
+    skeletal_muscle_pct  REAL,
+    bone_mass            REAL,
+    -- Músculo segmentario (%)
+    seg_muscle_left_arm  REAL,
+    seg_muscle_right_arm REAL,
+    seg_muscle_left_leg  REAL,
+    seg_muscle_right_leg REAL,
+    seg_muscle_trunk     REAL,
+    -- Fluidos y metabolismo
+    body_water_pct       REAL,
+    bmr                  INTEGER,
+    protein_pct          REAL,
+    -- Métricas estadísticas
+    body_age             INTEGER,
+    notes                TEXT,
+    created_at           TEXT DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date);
 CREATE INDEX IF NOT EXISTS idx_cardio_date ON cardio_sessions(date);
 CREATE INDEX IF NOT EXISTS idx_measurements_date ON body_measurements(date);
+CREATE INDEX IF NOT EXISTS idx_composition_date ON body_composition(date);
 CREATE INDEX IF NOT EXISTS idx_sets_workout_exercise ON sets(workout_exercise_id);
 CREATE INDEX IF NOT EXISTS idx_workout_exercises_workout ON workout_exercises(workout_id);

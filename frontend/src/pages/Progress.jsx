@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
-import { subMonths, subYears, format } from 'date-fns';
+import { subMonths, format } from 'date-fns';
 import { api } from '../api/client.js';
 import Card from '../components/ui/Card.jsx';
 import WeightChart from '../components/charts/WeightChart.jsx';
 import MeasurementChart from '../components/charts/MeasurementChart.jsx';
 import ExerciseProgressChart from '../components/charts/ExerciseProgressChart.jsx';
 import CardioChart from '../components/charts/CardioChart.jsx';
+import BodyCompositionChart, { COMPOSITION_LINES } from '../components/charts/BodyCompositionChart.jsx';
+import SegmentalChart from '../components/charts/SegmentalChart.jsx';
+import ViscFatBMRChart from '../components/charts/ViscFatBMRChart.jsx';
+import BodyAgeChart from '../components/charts/BodyAgeChart.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 
 const RANGES = [
@@ -62,6 +66,16 @@ function ChartCard({ title, children, controls }) {
   );
 }
 
+function SectionDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">{label}</span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
+}
+
 function dateParams(range) {
   if (!range.months) return '';
   const from = format(subMonths(new Date(), range.months), 'yyyy-MM-dd');
@@ -74,9 +88,12 @@ export default function Progress() {
   const [measureData, setMeasureData] = useState([]);
   const [cardioData, setCardioData] = useState([]);
   const [exerciseData, setExerciseData] = useState([]);
+  const [compositionData, setCompositionData] = useState([]);
+  const [segmentalData, setSegmentalData] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState('');
   const [activeLines, setActiveLines] = useState(['waist_cm', 'chest_cm']);
+  const [activeCompLines, setActiveCompLines] = useState(['body_fat_pct', 'skeletal_muscle_pct']);
   const [cardioMetric, setCardioMetric] = useState('distance_km');
   const [loading, setLoading] = useState(true);
 
@@ -96,17 +113,20 @@ export default function Progress() {
       api.get(`/progress/weight${params}`),
       api.get(`/progress/measurements${params}`),
       api.get(`/progress/cardio${params}`),
-    ]).then(([w, m, c]) => {
+      api.get(`/progress/composition${params}`),
+      api.get(`/progress/composition/segmental${params}`),
+    ]).then(([w, m, c, comp, seg]) => {
       setWeightData(w);
       setMeasureData(m);
       setCardioData(c);
+      setCompositionData(comp);
+      setSegmentalData(seg);
     }).finally(() => setLoading(false));
   }, [range]);
 
   useEffect(() => {
     if (!selectedExercise) return;
     const params = dateParams(range);
-    const sep = params ? '&' : '?';
     api.get(`/progress/exercise/${encodeURIComponent(selectedExercise)}${params}`)
       .then(setExerciseData)
       .catch(() => setExerciseData([]));
@@ -114,6 +134,12 @@ export default function Progress() {
 
   function toggleLine(key) {
     setActiveLines(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  }
+
+  function toggleCompLine(key) {
+    setActiveCompLines(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
   }
@@ -198,6 +224,48 @@ export default function Progress() {
         }
       >
         <CardioChart data={cardioData} metric={cardioMetric} />
+      </ChartCard>
+
+      {/* ── Healthkeep FG2001B-A ── */}
+      <SectionDivider label="Composición corporal · Healthkeep" />
+
+      {/* Porcentajes globales */}
+      <ChartCard
+        title="Composición porcentual"
+        controls={
+          <div className="flex flex-wrap gap-1.5">
+            {COMPOSITION_LINES.map(l => (
+              <button
+                key={l.key}
+                onClick={() => toggleCompLine(l.key)}
+                className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                  activeCompLines.includes(l.key)
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-surface-2 text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        }
+      >
+        <BodyCompositionChart data={compositionData} activeLines={activeCompLines} />
+      </ChartCard>
+
+      {/* Grasa visceral + TMB */}
+      <ChartCard title="Grasa visceral y tasa metabólica basal">
+        <ViscFatBMRChart data={compositionData} />
+      </ChartCard>
+
+      {/* Mapa segmental */}
+      <ChartCard title="Mapa segmental (grasa y músculo)">
+        <SegmentalChart data={segmentalData} />
+      </ChartCard>
+
+      {/* Edad corporal e IMC */}
+      <ChartCard title="Edad corporal e IMC">
+        <BodyAgeChart data={compositionData} />
       </ChartCard>
     </div>
   );
