@@ -1,26 +1,21 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { ClipboardPaste, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from 'lucide-react';
 import { api } from '../../api/client.js';
+import { parseFitdays, countExtracted } from '../../utils/fitdays-parser.js';
 import Button from '../ui/Button.jsx';
 import Input from '../ui/Input.jsx';
 import LoadingSpinner from '../ui/LoadingSpinner.jsx';
 
 const EMPTY = {
   date: format(new Date(), 'yyyy-MM-dd'),
-  // Básico
   weight_kg: '', bmi: '', fat_free_weight: '',
-  // Grasa
   body_fat_pct: '', subcutaneous_fat: '', visceral_fat: '',
-  // Músculo y hueso
   muscle_mass: '', skeletal_muscle_pct: '', bone_mass: '',
-  // Fluidos y metabolismo
   body_water_pct: '', bmr: '', protein_pct: '',
-  // Estadístico
   body_age: '',
-  // Grasa segmentaria
   seg_fat_left_arm: '', seg_fat_right_arm: '',
   seg_fat_left_leg: '', seg_fat_right_leg: '', seg_fat_trunk: '',
-  // Músculo segmentario
   seg_muscle_left_arm: '', seg_muscle_right_arm: '',
   seg_muscle_left_leg: '', seg_muscle_right_leg: '', seg_muscle_trunk: '',
   notes: '',
@@ -35,6 +30,67 @@ function SectionTitle({ children }) {
   );
 }
 
+function ImportSection({ onImport }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [result, setResult] = useState(null);
+
+  function handleExtract() {
+    const parsed = parseFitdays(text);
+    const count = countExtracted(parsed);
+    setResult({ parsed, count });
+    if (count > 0) onImport(parsed);
+  }
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <ClipboardPaste size={16} className="text-primary" />
+          <span className="text-sm font-medium text-primary">Importar desde informe Fitdays</span>
+          <span className="text-xs text-text-muted">— pega el texto del PDF o la app</span>
+        </div>
+        {open ? <ChevronUp size={15} className="text-primary" /> : <ChevronDown size={15} className="text-primary" />}
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-3 border-t border-primary/20">
+          <textarea
+            rows={6}
+            value={text}
+            onChange={e => { setText(e.target.value); setResult(null); }}
+            placeholder={"Pega aquí el texto copiado del informe Fitdays.\nEjemplo:\n  Peso 145.3 (62.6-84.7) 100.0 Alto\n  Grasa corporal 55.5 (8.9-17.8) 38.2 Alto\n  Grado de grasa visceral 20\n  Tasa metabólica basal 2331kcal\n  ..."}
+            className="w-full mt-3 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 resize-y focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-xs leading-relaxed"
+          />
+          <div className="flex items-center gap-3">
+            <Button type="button" onClick={handleExtract} disabled={!text.trim()}>
+              <ClipboardPaste size={14} />
+              Extraer y rellenar
+            </Button>
+            {result && (
+              <div className={`flex items-center gap-1.5 text-sm ${result.count > 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                {result.count > 0
+                  ? <><CheckCircle size={14} /> {result.count} campos extraídos</>
+                  : <><AlertCircle size={14} /> No se reconoció el formato</>
+                }
+              </div>
+            )}
+          </div>
+          {result?.count > 0 && (
+            <p className="text-xs text-text-muted">
+              Los campos detectados se han rellenado abajo. Revisa y completa el resto manualmente.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ComposicionForm({ initial, onSaved, onCancel }) {
   const [form, setForm] = useState(initial ? { ...EMPTY, ...initial } : EMPTY);
   const [loading, setLoading] = useState(false);
@@ -42,6 +98,10 @@ export default function ComposicionForm({ initial, onSaved, onCancel }) {
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
   const num = v => (v !== '' && v !== null && v !== undefined) ? Number(v) : null;
+
+  function handleImport(parsed) {
+    setForm(f => ({ ...f, ...Object.fromEntries(Object.entries(parsed).filter(([, v]) => v !== undefined)) }));
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -90,6 +150,10 @@ export default function ComposicionForm({ initial, onSaved, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+
+      {/* Importar desde Fitdays */}
+      {!initial?.id && <ImportSection onImport={handleImport} />}
+
       <Input label="Fecha" type="date" value={form.date} onChange={e => set('date', e.target.value)} required />
 
       <SectionTitle>Peso y masa básica</SectionTitle>
