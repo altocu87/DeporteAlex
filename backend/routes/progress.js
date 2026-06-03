@@ -95,6 +95,34 @@ router.get('/exercise/:name/history', (req, res) => {
   }));
 });
 
+router.get('/composition', (req, res) => {
+  const { from, to } = req.query;
+  const conditions = [];
+  const params = [];
+  if (from) { conditions.push('date >= ?'); params.push(from); }
+  if (to)   { conditions.push('date <= ?'); params.push(to); }
+  res.json(db.prepare(
+    `SELECT date, weight_kg, bmi, body_fat_pct, subcutaneous_fat, visceral_fat,
+            muscle_mass, skeletal_muscle_pct, bone_mass,
+            body_water_pct, bmr, protein_pct, body_age, fat_free_weight
+     FROM body_composition${buildWhere(conditions)} ORDER BY date`
+  ).all(...params));
+});
+
+router.get('/composition/segmental', (req, res) => {
+  const { from, to } = req.query;
+  const conditions = [];
+  const params = [];
+  if (from) { conditions.push('date >= ?'); params.push(from); }
+  if (to)   { conditions.push('date <= ?'); params.push(to); }
+  res.json(db.prepare(
+    `SELECT date,
+            seg_fat_left_arm, seg_fat_right_arm, seg_fat_left_leg, seg_fat_right_leg, seg_fat_trunk,
+            seg_muscle_left_arm, seg_muscle_right_arm, seg_muscle_left_leg, seg_muscle_right_leg, seg_muscle_trunk
+     FROM body_composition${buildWhere(conditions)} ORDER BY date DESC`
+  ).all(...params));
+});
+
 router.get('/summary', (req, res) => {
   const now = new Date();
   const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
